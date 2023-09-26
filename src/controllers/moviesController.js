@@ -1,5 +1,7 @@
 const db = require('../database/models');
 const Movie = require('../database/models/Movie');
+const moment = require('moment');
+const { validationResult } = require('express-validator');
 
 module.exports = {
     list: (req, res) => {
@@ -12,7 +14,7 @@ module.exports = {
             .catch(error => console.log(error))
     },
     detail: (req, res) => {
-        const {id} = req.params;
+        const { id } = req.params;
         db.Movie.findByPk(id)
             .then(movie => {
                 return res.render('moviesDetail', {
@@ -47,4 +49,102 @@ module.exports = {
         })
             .catch(error => console.log(error))
     },
+    add: function (req, res) {
+        // TODO   
+        return res.render('moviesAdd')
+    },
+    create: function (req, res) {
+        // TODO
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.render('moviesAdd', {
+                errors: errors.mapped(),
+                old: req.body
+            });
+        }
+        const { title, rating, release_date, awards, length, genre_id } = req.body;
+        db.Movie.create({
+            title: title.trim(),
+            rating,
+            awards,
+            release_date,
+            length,
+            genre_id
+        })
+            .then(movie => {
+                console.log(movie);
+                return res.redirect('/movies')
+            })
+            .catch(error => console.log(error))
+    },
+    edit: function (req, res) {
+        // TODO
+        db.Movie.findByPk(req.params.id)
+            .then(movie => {
+                console.log(moment(movie.release_date).format('YYYY-MM-DD'));
+                return res.render('moviesEdit', {
+                    Movie: movie,
+                    moment
+                })
+            })
+            .catch(error => console.log(error))
+    },
+    update: function (req, res) {
+        // TODO
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            req.body.id = req.params.id;
+            return res.render('moviesEdit', {
+                errors : errors.mapped(),
+                Movie : req.body,
+                moment
+            })
+        }
+        const { title, rating, release_date, awards, length, genre_id } = req.body;
+        db.Movie.update(
+            {
+                title: title.trim(),
+                rating,
+                awards,
+                release_date,
+                length,
+                genre_id
+            },
+            {
+                where: {
+                    id: req.params.id
+                }
+            }
+        ).then(response => {
+            console.log(response);
+            db.Movie.findByPk(req.params.id)
+                .then(movie => {
+                    return res.render('moviesDetail', {
+                        movie
+                    })
+                })
+
+        })
+            .catch(error => console.log(error))
+    },
+    delete: function (req, res) {
+        // TODO
+        db.Movie.findByPk(req.params.id)
+        .then(movie => {
+            res.render('moviesDelete', {
+                Movie : movie
+            });
+        })
+        .catch(error => console.log(error))
+    },
+    destroy: function (req, res) {
+        // TODO
+        db.Movie.destroy({
+            where : {
+                id: req.params.id
+            }
+        });
+        res.redirect('/movies')
+    }
+
 }
