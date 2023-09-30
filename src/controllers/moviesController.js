@@ -95,8 +95,8 @@ module.exports = {
         if (!errors.isEmpty()) {
             req.body.id = req.params.id;
             return res.render('moviesEdit', {
-                errors : errors.mapped(),
-                Movie : req.body,
+                errors: errors.mapped(),
+                Movie: req.body,
                 moment
             })
         }
@@ -130,21 +130,46 @@ module.exports = {
     delete: function (req, res) {
         // TODO
         db.Movie.findByPk(req.params.id)
-        .then(movie => {
-            res.render('moviesDelete', {
-                Movie : movie
-            });
-        })
-        .catch(error => console.log(error))
+            .then(movie => {
+                return res.render('moviesDelete', {
+                    Movie: movie
+                });
+            })
+            .catch(error => console.log(error))
     },
     destroy: function (req, res) {
         // TODO
-        db.Movie.destroy({
-            where : {
-                id: req.params.id
-            }
-        });
-        res.redirect('/movies')
-    }
+        const { id } = req.params
 
-}
+        db.ActorMovie.destroy({
+            where: {
+                movie_id: id
+            }
+        })
+            .then(response => {
+                console.log(response);
+
+                db.Actor.update(
+                    {
+                        favorite_movie_id: null
+                    }, {
+                    where: {
+                        favorite_movie_id: id
+                    }
+                }
+                )
+                    .then(response => {
+                        console.log(response);
+                        db.Movie.destroy({
+                            where: {
+                                id
+                            }
+                        })
+                            .then(response => {
+                                console.log(response);
+                                return res.redirect('/movies')
+                            })
+                    })
+            }).catch(error => console.log(error))
+    },
+};
